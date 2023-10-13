@@ -13,6 +13,9 @@
 
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
+
+const PLAYER_STORAGE_KEY = "MP3_PLAYER";
+
 const heading = $("header h2");
 const cdThumb = $(".cd-thumb");
 const audio = $("#audio");
@@ -30,7 +33,12 @@ const app = {
   isPlaying: false,
   isRanDom: false,
   isRepeat: false,
+  config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
   currentIndex: 0,
+  setConfig: function (key, value) {
+    this.config[key] = value;
+    localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config));
+  },
   songs: [
     {
       name: "Chờ Em Đến Bao Giờ? (New Mix)",
@@ -181,12 +189,14 @@ const app = {
     // Xử lý bật / tắt random song
     randomBtn.onclick = function () {
       _this.isRanDom = !_this.isRanDom;
+      _this.setConfig("isRanDom", _this.isRanDom);
       randomBtn.classList.toggle("active", _this.isRanDom);
     };
 
     // Xử lý lặp lại một song
     repeatBtn.onclick = function (e) {
       _this.isRepeat = !_this.isRepeat;
+      _this.setConfig("isRepeat", _this.isRepeat);
       repeatBtn.classList.toggle("active", _this.isRepeat);
     };
 
@@ -205,7 +215,11 @@ const app = {
       if (songNode || e.target.closest(".option")) {
         // Xử lý khi click vào song
         if (songNode) {
-          console.log(songNode.getAttribute("data-index"));
+          _this.currentIndex = Number(songNode.dataset.index);
+          _this.loadCurrentSong();
+          _this.render();
+          audio.play();
+          console.log(songNode.dataset.index);
         }
 
         // xử lý khi click vào song của option
@@ -213,6 +227,11 @@ const app = {
         }
       }
     };
+  },
+  //load config
+  loadConfig: function () {
+    this.isRanDom = this.config.isRanDom;
+    this.isRepeat = this.config.isRepeat;
   },
   nextSong: function () {
     this.currentIndex++;
@@ -252,6 +271,8 @@ const app = {
     });
   },
   start: function () {
+    // Gán cấu hình từ config vao ứng dụng
+    this.loadConfig();
     // Định nghĩa các thuộc tính cho object
     this.definedProperties();
 
@@ -263,6 +284,10 @@ const app = {
 
     // Render playlist
     this.render();
+
+    // Hiện thị trạng thái ban đầu của  button repeat & random
+    randomBtn.classList.toggle("active", this.isRanDom);
+    repeatBtn.classList.toggle("active", this.isRepeat);
   },
 };
 app.start();
