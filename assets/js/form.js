@@ -22,7 +22,16 @@ function Validator(options) {
     // lặp qua từng rule và kiểm tra
     // nếu có lỗi dừng việc kiểm tra
     for (var i = 0; i < rules.length; i++) {
-      errorMessage = rules[i](inputElement.value);
+      switch (inputElement.type) {
+        case "radio":
+        case "checkbox":
+          errorMessage = rules[i](
+            formElement.querySelector(rule.selector + ":checked")
+          );
+          break;
+        default:
+          errorMessage = rules[i](inputElement.value);
+      }
       if (errorMessage) break;
     }
     if (errorMessage) {
@@ -65,7 +74,16 @@ function Validator(options) {
             values,
             input
           ) {
-            values[input.name] = input.value;
+            switch (input.type) {
+              case "radio":
+              case "checkbox":
+                values[input.name] = formElement.querySelector(
+                  'input[name="' + input.name + '"]:checked'
+                ).value;
+                break;
+              default:
+                values[input.name] = input.value;
+            }
             return values;
           },
           {});
@@ -86,27 +104,28 @@ function Validator(options) {
         selectorRule[rule.selector] = [rule.test];
       }
 
-      var inputElement = formElement.querySelector(rule.selector);
-
-      if (inputElement) {
-        //Xử lý trường hợp blur khỏi input
-        inputElement.onblur = function () {
-          // value: inputElement.value
-          // test func:rule.test
-          validate(inputElement, rule);
-        };
-        //xử lý mỗi khi người dùng nhập vào input
-        inputElement.oninput = function () {
-          var errorElement = getParent(
-            inputElement,
-            options.formGroupSelector
-          ).querySelector(options.errorSelector);
-          errorElement.innerText = "";
-          getParent(inputElement, options.formGroupSelector).classList.remove(
-            "invalid"
-          );
-        };
-      }
+      var inputElements = formElement.querySelectorAll(rule.selector);
+      Array.from(inputElements).forEach(function (inputElement) {
+        if (inputElement) {
+          //Xử lý trường hợp blur khỏi input
+          inputElement.onblur = function () {
+            // value: inputElement.value
+            // test func:rule.test
+            validate(inputElement, rule);
+          };
+          //xử lý mỗi khi người dùng nhập vào input
+          inputElement.oninput = function () {
+            var errorElement = getParent(
+              inputElement,
+              options.formGroupSelector
+            ).querySelector(options.errorSelector);
+            errorElement.innerText = "";
+            getParent(inputElement, options.formGroupSelector).classList.remove(
+              "invalid"
+            );
+          };
+        }
+      });
     });
   }
 }
@@ -119,7 +138,7 @@ Validator.isRequired = function (selector, message) {
   return {
     selector: selector,
     test: function (value) {
-      return value.trim() ? undefined : message || "Vui lòng nhập trường này";
+      return value ? undefined : message || "Vui lòng nhập trường này";
     },
   };
 };
